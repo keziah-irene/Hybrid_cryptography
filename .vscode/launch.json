@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run main_hybrid.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/hybrid_crypto/src/main_hybrid.py",
+      "console": "integratedTerminal",
+      "env": {
+        "HYBRID_TEST_BUCKET": "s3-bucket-for-hybrid-crypto-project"
+      }
+    }
+  ]
+}
