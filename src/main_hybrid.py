@@ -16,7 +16,6 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 # CONFIGURATION
 BUCKET = os.environ.get("HYBRID_TEST_BUCKET") or "s3-bucket-for-hybrid-crypto-project"
 S3_PREFIX = "hybrid-simple/testfile" #base name
-DEFAULT_TESTFILE = Path(__file__).resolve().parents[1] / "testfiles" / "test1mb.bin" #default file creation
 s3 = boto3.client("s3") #creates aws client
 
 
@@ -223,27 +222,31 @@ def decrypt_download_ec(priv):
 
 # main function
 def run_minimal_demo():
-    #use the file given in CLI
-    if len(sys.argv) > 1:
-        file = Path(sys.argv[1]).resolve()
-    # else use the default file
-    else:
-        ensure_testfile(DEFAULT_TESTFILE)
-        file = DEFAULT_TESTFILE
+    # ---------- Validate CLI Argument ----------
+    if len(sys.argv) < 2:
+        print("Error: File not provided. Please pass a file path as a command-line argument.")
+        sys.exit(1)
 
-    #read original file
+    file = Path(sys.argv[1]).resolve()
+
+    if not file.exists():
+        print(f"Error: File not found: {file}")
+        sys.exit(1)
+
     data = file.read_bytes()
 
-    # ---------- RSA ----------
-    t0 = time.perf_counter()
-    rsa_priv = rsa.generate_private_key(65537, 2048) #generate RSA private key
-    rsa_pub = rsa_priv.public_key() #get public key
-    rsa_keygen = time.perf_counter() - t0 #measure key generation time
-
+    # ================= RSA =================
     print("\n-- RSA variant --")
-    #encrypt and upload
+
+    t0 = time.perf_counter()
+    rsa_priv = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048
+    )
+    rsa_pub = rsa_priv.public_key()
+    rsa_keygen = time.perf_counter() - t0
+
     enc, wrap, up, size = encrypt_and_upload_rsa(file, rsa_pub)
-    #download and decrypt
     unwrap, dec, dl, pt = decrypt_download_rsa(rsa_priv)
 
     print(f"Key generation time: {rsa_keygen:.4f}s")
@@ -254,18 +257,17 @@ def run_minimal_demo():
     print(f"Download time: {dl:.4f}s")
     print(f"Unwrap time: {unwrap:.4f}s")
     print(f"Decrypt time: {dec:.4f}s")
-    print(f"OK: {pt == data}") # verify correctness
+    print(f"OK: {pt == data}")
 
-    # ---------- ECC ----------
-    t0 = time.perf_counter()
-    ec_priv = ec.generate_private_key(ec.SECP256R1()) #generate bob's ECC private key
-    ec_pub = ec_priv.public_key() #get public key
-    ec_keygen = time.perf_counter() - t0 #measure key generation time
-
+    # ================= ECC =================
     print("\n-- ECC variant --")
-    #encrypt and upload
+
+    t0 = time.perf_counter()
+    ec_priv = ec.generate_private_key(ec.SECP256R1())
+    ec_pub = ec_priv.public_key()
+    ec_keygen = time.perf_counter() - t0
+
     enc, wrap, up, size = encrypt_and_upload_ec(file, ec_pub)
-    #download and decrypt
     unwrap, dec, dl, pt = decrypt_download_ec(ec_priv)
 
     print(f"Key generation time: {ec_keygen:.4f}s")
@@ -276,7 +278,7 @@ def run_minimal_demo():
     print(f"Download time: {dl:.4f}s")
     print(f"Unwrap time: {unwrap:.4f}s")
     print(f"Decrypt time: {dec:.4f}s")
-    print(f"OK: {pt == data}") #verify correctness
+    print(f"OK: {pt == data}")
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     run_minimal_demo()
