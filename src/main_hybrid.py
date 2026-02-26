@@ -12,12 +12,10 @@ from cryptography.hazmat.primitives import hashes, serialization #encode public 
 from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-
 # CONFIGURATION
 BUCKET = os.environ.get("HYBRID_TEST_BUCKET") or "s3-bucket-for-hybrid-crypto-project"
 S3_PREFIX = "hybrid-simple/testfile" #base name
 s3 = boto3.client("s3") #creates aws client
-
 
 # HELPER FUNCTIONS
 #converts raw binary data into a URL-safe string
@@ -47,7 +45,6 @@ def download_from_s3(key: str) -> tuple[bytes, float]:
     t0 = time.perf_counter() #start timing
     obj = s3.get_object(Bucket=BUCKET, Key=key)
     return obj["Body"].read(), time.perf_counter() - t0 # return file data and download time
-
 
 # CRYPTOGRAPHIC FUNCTIONS
 #AES function
@@ -122,7 +119,6 @@ def ec_unwrap(priv, eph_pub, nonce, wrapped):
 
     return AESGCM(kek).decrypt(nonce, wrapped, None) #Recover AES key
 
-
 # RSA FLOW
 def encrypt_and_upload_rsa(path, pub):
     data = Path(path).read_bytes() #read file
@@ -169,7 +165,6 @@ def decrypt_download_rsa(priv):
 
     #return all measurements
     return unwrap_time, dec_time, dl_time, pt
-
 
 # ECC flow - same as RSA flow except eph, nonce
 def encrypt_and_upload_ec(path, pub):
@@ -218,7 +213,6 @@ def decrypt_download_ec(priv):
     dec_time = time.perf_counter() - t0
 
     return unwrap_time, dec_time, dl_time, pt
-
 
 # main function
 def run_minimal_demo():
